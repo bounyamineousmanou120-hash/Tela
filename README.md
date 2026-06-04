@@ -9,6 +9,7 @@ Têla est une application mobile Android destinée aux tailleurs de Maroua. Cett
 - Création d'une identité visuelle inspirée des maquettes : marron, orange couture, beige clair et cartes arrondies.
 - Mise en place d'une navigation basse avec quatre sections : Accueil, Clients, Commandes et Profil.
 - Ajout de données de démonstration locales en mémoire pour présenter le parcours métier sans attendre la base de données.
+- Séparation des modèles métier et du dépôt de démonstration dans `cm.maroua.tela.data` pour préparer l'intégration de Room.
 
 ## Écrans disponibles
 
@@ -19,7 +20,7 @@ Têla est une application mobile Android destinée aux tailleurs de Maroua. Cett
 
 ## Prochaines étapes recommandées
 
-1. Ajouter Room pour stocker les clients, mesures et commandes localement.
+1. Ajouter Room pour stocker les clients, mesures et commandes localement à partir des modèles déjà isolés.
 2. Créer les formulaires d'ajout et de modification de client.
 3. Créer les formulaires de commande et de mesures.
 4. Rendre les étapes d'avancement réellement modifiables.

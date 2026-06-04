@@ -41,6 +41,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cm.maroua.tela.data.TelaClient
+import cm.maroua.tela.data.TelaDashboardStats
+import cm.maroua.tela.data.TelaDemoRepository
+import cm.maroua.tela.data.TelaOrder
+import cm.maroua.tela.data.TelaOrderStatus
+import cm.maroua.tela.data.TelaWorkshopProfile
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,36 +67,6 @@ private val Green = Color(0xFF22C55E)
 private val Purple = Color(0xFF7C3AED)
 private val Red = Color(0xFFEF4444)
 
-private data class ClientUi(
-    val initials: String,
-    val name: String,
-    val phone: String,
-    val orders: Int,
-    val color: Color,
-)
-
-private data class OrderUi(
-    val clientInitials: String,
-    val clientName: String,
-    val title: String,
-    val date: String,
-    val status: String,
-    val statusColor: Color,
-)
-
-private val demoClients = listOf(
-    ClientUi("AK", "Aïcha Kolodji", "+237 677 123 456", 4, Color(0xFFF4BE62)),
-    ClientUi("FM", "Fanta Moussa", "+237 699 234 567", 7, Color(0xFF9B59C7)),
-    ClientUi("MB", "Mariama Bello", "+237 655 345 678", 2, Red),
-    ClientUi("HY", "Halima Yaya", "+237 670 456 789", 5, Color(0xFF2ECC71)),
-)
-
-private val demoOrders = listOf(
-    OrderUi("AK", "Aïcha Kolodji", "Boubou brodé", "28 mai", "En cours", Color(0xFFF59E0B)),
-    OrderUi("FM", "Fanta Moussa", "Robe de mariage", "25 mai", "Terminé", Green),
-    OrderUi("MB", "Mariama Bello", "Tenue 3 pièces", "22 mai", "En attente", Purple),
-)
-
 @Composable
 fun TelaApp() {
     MaterialTheme(
@@ -103,6 +79,11 @@ fun TelaApp() {
     ) {
         var selectedTab by remember { mutableIntStateOf(0) }
         val tabs = listOf("Accueil", "Clients", "Commandes", "Profil")
+        val clients = remember { TelaDemoRepository.clients }
+        val orders = remember { TelaDemoRepository.orders }
+        val stats = remember { TelaDemoRepository.dashboardStats }
+        val profile = remember { TelaDemoRepository.profile }
+        val featuredOrder = remember { TelaDemoRepository.featuredOrder }
 
         Scaffold(
             bottomBar = {
@@ -125,10 +106,10 @@ fun TelaApp() {
                 color = Cream,
             ) {
                 when (selectedTab) {
-                    0 -> HomeScreen()
-                    1 -> ClientsScreen()
-                    2 -> OrdersScreen()
-                    else -> ProfileScreen()
+                    0 -> HomeScreen(stats = stats, orders = orders)
+                    1 -> ClientsScreen(clients = clients)
+                    2 -> OrdersScreen(order = featuredOrder)
+                    else -> ProfileScreen(profile = profile, stats = stats)
                 }
             }
         }
@@ -143,7 +124,7 @@ private fun tabEmoji(label: String): String = when (label) {
 }
 
 @Composable
-private fun HomeScreen() {
+private fun HomeScreen(stats: TelaDashboardStats, orders: List<TelaOrder>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -154,13 +135,13 @@ private fun HomeScreen() {
                 modifier = Modifier.padding(horizontal = 18.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                StatCard("14", "Commandes", "ce mois", Orange, Modifier.weight(1f))
-                StatCard("47", "Clients", "total", Purple, Modifier.weight(1f))
-                StatCard("8", "Livrées", "ce mois", Green, Modifier.weight(1f))
+                StatCard(stats.monthlyOrders.toString(), "Commandes", "ce mois", Orange, Modifier.weight(1f))
+                StatCard(stats.totalClients.toString(), "Clients", "total", Purple, Modifier.weight(1f))
+                StatCard(stats.deliveredThisMonth.toString(), "Livrées", "ce mois", Green, Modifier.weight(1f))
             }
         }
         item { SectionTitle("Commandes récentes", "Voir tout") }
-        items(demoOrders) { order -> OrderCard(order) }
+        items(orders) { order -> OrderCard(order) }
         item { SectionTitle("Catégories", null) }
         item {
             Row(
@@ -247,7 +228,7 @@ private fun SectionTitle(title: String, action: String?) {
 }
 
 @Composable
-private fun ClientsScreen() {
+private fun ClientsScreen(clients: List<TelaClient>) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -256,7 +237,7 @@ private fun ClientsScreen() {
     ) {
         item { ScreenTopBar("‹", "Mes Clients", "+") }
         item { LightSearchPill("Rechercher un client…") }
-        items(demoClients) { client -> ClientCard(client) }
+        items(clients) { client -> ClientCard(client) }
     }
 }
 
@@ -305,7 +286,7 @@ private fun LightSearchPill(text: String) {
 }
 
 @Composable
-private fun ClientCard(client: ClientUi) {
+private fun ClientCard(client: TelaClient) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -316,12 +297,12 @@ private fun ClientCard(client: ClientUi) {
             modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(client.initials, client.color)
+            Avatar(client.initials, Color(client.avatarColor))
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(client.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(client.fullName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text(client.phone, color = Muted, fontSize = 12.sp)
-                Text("${client.orders} commandes", color = Orange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("${client.orderCount} commandes", color = Orange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CircleButton("☎")
@@ -345,18 +326,18 @@ private fun Avatar(initials: String, color: Color) {
 }
 
 @Composable
-private fun OrdersScreen() {
+private fun OrdersScreen(order: TelaOrder) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
     ) {
-        item { OrderDetailHeader() }
+        item { OrderDetailHeader(order) }
         item {
             Column(
                 modifier = Modifier.padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                MeasurementsPanel()
-                ProgressPanel()
+                MeasurementsPanel(order)
+                ProgressPanel(order)
                 PrimaryButton("Mettre à jour l'avancement")
             }
         }
@@ -364,7 +345,7 @@ private fun OrdersScreen() {
 }
 
 @Composable
-private fun OrderDetailHeader() {
+private fun OrderDetailHeader(order: TelaOrder) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -380,18 +361,18 @@ private fun OrderDetailHeader() {
         }
         Spacer(Modifier.height(18.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Avatar("AK", Color(0xFFF4BE62))
+            Avatar(order.clientInitials, avatarColorForInitials(order.clientInitials))
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Aïcha Kolodji", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text("Boubou brodé · Cmd #0042", color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp)
+                Text(order.clientName, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("${order.clothingType} · Cmd ${order.commandNumber}", color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp)
             }
-            StatusChip("En cours", Color(0xFFF59E0B))
+            StatusChip(order.status.label, order.status.statusColor())
         }
         Spacer(Modifier.height(16.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            DateCard("COMMANDÉ LE", "20 mai 2025", Modifier.weight(1f))
-            DateCard("LIVRAISON", "5 juin 2025", Modifier.weight(1f))
+            DateCard("COMMANDÉ LE", order.orderedAt, Modifier.weight(1f))
+            DateCard("LIVRAISON", order.deliveryAt, Modifier.weight(1f))
         }
     }
 }
@@ -410,20 +391,12 @@ private fun DateCard(label: String, value: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun MeasurementsPanel() {
+private fun MeasurementsPanel(order: TelaOrder) {
     InfoPanel(title = "📐  Mesures") {
-        val measures = listOf(
-            "92 cm" to "Poitrine",
-            "74 cm" to "Taille",
-            "96 cm" to "Hanches",
-            "38 cm" to "Épaules",
-            "110 cm" to "Longueur",
-            "58 cm" to "Manche",
-        )
-        measures.chunked(3).forEach { row ->
+        order.measurements.chunked(3).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { item ->
-                    MeasurementItem(item.first, item.second, Modifier.weight(1f))
+                row.forEach { measurement ->
+                    MeasurementItem(measurement.value, measurement.label, Modifier.weight(1f))
                 }
             }
             Spacer(Modifier.height(10.dp))
@@ -446,9 +419,9 @@ private fun MeasurementItem(value: String, label: String, modifier: Modifier = M
 }
 
 @Composable
-private fun ProgressPanel() {
+private fun ProgressPanel(order: TelaOrder) {
     InfoPanel(title = "✂️  Avancement") {
-        listOf("Prise de mesures", "Coupe du tissu", "Assemblage").forEach { step ->
+        order.progress.forEach { step ->
             Row(
                 modifier = Modifier.padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -457,11 +430,18 @@ private fun ProgressPanel() {
                     modifier = Modifier
                         .size(22.dp)
                         .clip(CircleShape)
-                        .background(Orange),
+                        .background(if (step.isCompleted) Orange else Color(0xFFE5E0DA)),
                     contentAlignment = Alignment.Center,
-                ) { Text("✓", color = Color.White, fontSize = 13.sp) }
+                ) {
+                    Text(if (step.isCompleted) "✓" else "", color = Color.White, fontSize = 13.sp)
+                }
                 Spacer(Modifier.width(12.dp))
-                Text(step, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(
+                    step.label,
+                    color = if (step.isCompleted) Color.Black else Muted,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
             }
         }
     }
@@ -498,7 +478,7 @@ private fun PrimaryButton(text: String) {
 }
 
 @Composable
-private fun OrderCard(order: OrderUi) {
+private fun OrderCard(order: TelaOrder) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -511,13 +491,13 @@ private fun OrderCard(order: OrderUi) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Avatar(order.clientInitials, if (order.clientInitials == "AK") Color(0xFFF4BE62) else if (order.clientInitials == "FM") Color(0xFF9B59C7) else Red)
+            Avatar(order.clientInitials, avatarColorForInitials(order.clientInitials))
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(order.clientName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text("${order.title} · ${order.date}", color = Muted, fontSize = 12.sp)
+                Text("${order.clothingType} · ${order.orderedAt}", color = Muted, fontSize = 12.sp)
             }
-            StatusChip(order.status, order.statusColor)
+            StatusChip(order.status.label, order.status.statusColor())
         }
     }
 }
@@ -556,7 +536,7 @@ private fun CategoryCard(icon: String, label: String, modifier: Modifier = Modif
 }
 
 @Composable
-private fun ProfileScreen() {
+private fun ProfileScreen(profile: TelaWorkshopProfile, stats: TelaDashboardStats) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -571,16 +551,16 @@ private fun ProfileScreen() {
                 .background(Orange),
             contentAlignment = Alignment.Center,
         ) {
-            Text("MA", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(profile.tailorInitials, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(10.dp))
-        Text("Moussa Alhadji", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("moussa.alhadji@tela-maroua.cm", color = Muted, fontSize = 12.sp)
+        Text(profile.tailorName, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(profile.email, color = Muted, fontSize = 12.sp)
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            ProfileStat("47", "Clients")
-            ProfileStat("14", "Commandes")
-            ProfileStat("120h", "Travaillées")
+            ProfileStat(stats.totalClients.toString(), "Clients")
+            ProfileStat(stats.monthlyOrders.toString(), "Commandes")
+            ProfileStat(profile.workedHours, "Travaillées")
         }
         Spacer(Modifier.height(28.dp))
         Column(
@@ -590,8 +570,8 @@ private fun ProfileScreen() {
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ProfileMenu("📍", "Mon atelier", "Marché central, Maroua")
-            ProfileMenu("🧶", "Mes spécialités", "Boubous, robes, costumes")
+            ProfileMenu("📍", profile.workshopName, profile.location)
+            ProfileMenu("🧶", "Mes spécialités", profile.specialties)
             ProfileMenu("🧾", "Mes tarifs", "Voir la grille tarifaire")
             ProfileMenu("🕘", "Aide & support", "Centre d'assistance Têla")
         }
@@ -634,6 +614,21 @@ private fun ProfileMenu(icon: String, title: String, subtitle: String) {
             Text("›", color = Muted, fontSize = 22.sp)
         }
     }
+}
+
+private fun TelaOrderStatus.statusColor(): Color = when (this) {
+    TelaOrderStatus.Pending -> Purple
+    TelaOrderStatus.InProgress -> Color(0xFFF59E0B)
+    TelaOrderStatus.Completed -> Green
+    TelaOrderStatus.Delivered -> Orange
+}
+
+private fun avatarColorForInitials(initials: String): Color = when (initials) {
+    "AK" -> Color(0xFFF4BE62)
+    "FM" -> Color(0xFF9B59C7)
+    "MB" -> Red
+    "HY" -> Color(0xFF2ECC71)
+    else -> Orange
 }
 
 @Preview(showBackground = true)
