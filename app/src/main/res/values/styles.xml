@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.Tela" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#FFFCF8</item>
+        <item name="android:navigationBarColor">#FFFCF8</item>
+    </style>
+</resources>
